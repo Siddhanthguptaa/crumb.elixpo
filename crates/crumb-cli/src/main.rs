@@ -14763,6 +14763,30 @@ mod tests {
         assert_eq!(full.approvals, Some(ApprovalMode::FullAccess));
         assert!(parse(&["exec", "--approvals", "yolo", "task"]).is_err());
 
+        // `--option=value` sets the option instead of starting the request.
+        let inline = parse(&[
+            "exec",
+            "--approvals=always-ask",
+            "--resume=crumb-1",
+            "--model=pollinations/openai",
+            "task",
+        ])
+        .unwrap()
+        .expect("exec action");
+        assert_eq!(inline.approvals, Some(ApprovalMode::AlwaysAsk));
+        assert_eq!(inline.resume.as_deref(), Some("crumb-1"));
+        assert_eq!(
+            inline.model,
+            Some(("pollinations".to_owned(), "openai".to_owned()))
+        );
+        assert_eq!(inline.request, "task");
+        assert!(parse(&["exec", "--approvals=yolo", "task"]).is_err());
+        assert!(parse(&["exec", "--resume=", "task"]).is_err());
+        assert_eq!(
+            parse(&["exec", "explain", "--resume=x"]).unwrap(),
+            request(ExecOutput::Text, None, None, "explain --resume=x")
+        );
+
         assert!(parse(&["exec"]).is_err());
         assert!(parse(&["exec", "--json"]).is_err());
         assert!(parse(&["exec", "--resume"]).is_err());
